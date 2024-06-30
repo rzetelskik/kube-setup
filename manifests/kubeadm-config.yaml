@@ -1,0 +1,46 @@
+kind: ClusterConfiguration
+apiVersion: kubeadm.k8s.io/v1beta3
+kubernetesVersion: v1.30.2
+apiServer:
+  certSANs:
+  - "192.168.124.204"
+  extraArgs:
+    event-ttl: 24h
+    audit-policy-file: /etc/ssl/certs/audit-policy.yaml
+    audit-log-path: /var/log/kube-apiserver-audit.log
+  extraVolumes:
+  - name: logs
+    hostPath: /var/log
+    mountPath: /var/log
+  - name: certs
+    hostPath: /etc/ssl/certs/audit-policy.yaml
+    mountPath: /etc/ssl/certs/audit-policy.yaml
+    pathType: File
+---
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: InitConfiguration
+nodeRegistration:
+  criSocket: "unix:///var/run/crio/crio.sock"
+  kubeletExtraArgs:
+    runtime-cgroups: /system.slice/crio.service
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd
+cgroupRoot: /
+systemCgroups: /system.slice
+kubeletCgroups: /system.slice/kubelet.service
+enforceNodeAllocatable:
+- pods
+- system-reserved
+systemReservedCgroup: /system.slice
+systemReserved:
+  cpu: "200m"
+  ephemeral-storage: 1Gi
+serializeImagePulls: false
+containerLogMaxSize: 50Mi
+cpuManagerPolicy: static
+maxPods: 1024
+kubeAPIQPS: 30
+kubeAPIBurst: 50
+hairpinMode: hairpin-veth
